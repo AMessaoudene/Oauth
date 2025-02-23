@@ -137,7 +137,7 @@ def aiesec_callback(request):
     login(request, user)
     print(f"User {user.username} logged in successfully")
 
-    return render(request, "dashboard.html", {"user": request.user})
+    return redirect("/")  # Redirect to home page instead of staying on callback URL
 
 def logout_and_redirect(request):
     """Logs out user and redirects to login page"""
@@ -199,8 +199,10 @@ def get_filters(request):
         {
             allOpportunity {
                 data {
-                    host_lc { 
-                        name 
+                    home_mc {
+                        parent {
+                            name  # Region or country of the opportunity
+                        }
                     }
                     backgrounds { 
                         constant_name 
@@ -253,8 +255,8 @@ def get_filters(request):
         try:
             data = response.json().get("data", {}).get("allOpportunity", {}).get("data", [])
             print("Parsed Data:", data)
-
-            host_regions = sorted(set([opp["host_lc"]["name"] for opp in data if opp.get("host_lc")]))
+            
+            host_regions = sorted(set([opp["home_mc"]["parent"]["name"] for opp in data if opp.get("home_mc") and opp["home_mc"].get("parent")]))
             backgrounds = sorted(set([bg["constant_name"] for opp in data if opp.get("backgrounds") for bg in opp["backgrounds"]]))
             skills = sorted(set([sk["constant_name"] for opp in data if opp.get("skills") for sk in opp["skills"]]))
             product_types = sorted(set([opp["programme"]["short_name"] for opp in data if opp.get("programme")]))
@@ -292,7 +294,11 @@ def fetch_filtered_opportunities(request):
                 {
                     allOpportunity {
                         data {
-                            host_lc { name }
+                            home_mc {
+                                parent {
+                                    name  # Region or country of the opportunity
+                                }
+                            }
                             backgrounds { constant_name }
                             skills { constant_name }
                             programme { short_name }
@@ -323,10 +329,19 @@ def fetch_filtered_opportunities(request):
 
             print("Parsed Data Before Filtering:", data)
 
+            # If no filters are selected, return all opportunities
+            if not selected_filters:
+                print("✅ No filters selected, returning all opportunities")
+                return JsonResponse({
+                    "message": "No filters applied, returning all opportunities",
+                    "filters": [],
+                    "opportunities": data
+                })
+
             def matches_filter(opp):
                 try:
                     return (
-                        opp.get("host_lc", {}).get("name") in selected_filters or
+                        opp.get("home_mc", {}).get("parent", {}).get("name") in selected_filters or
                         any(bg.get("constant_name") in selected_filters for bg in opp.get("backgrounds", [])) or
                         any(sk.get("constant_name") in selected_filters for sk in opp.get("skills", [])) or
                         opp.get("programme", {}).get("short_name") in selected_filters
@@ -339,13 +354,11 @@ def fetch_filtered_opportunities(request):
 
             print("Filtered Opportunities:", filtered_opportunities)
 
-            response_data = {
+            return JsonResponse({
                 "message": "Filters applied successfully!",
                 "filters": selected_filters,
                 "opportunities": filtered_opportunities
-            }
-
-            return JsonResponse(response_data)
+            })
 
         except Exception as e:
             print("An error occurred in fetch_filtered_opportunities:", str(e))

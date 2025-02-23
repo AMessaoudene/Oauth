@@ -26,10 +26,19 @@
         
         <form id="filter-form">
             {% csrf_token %}
+
+            <div class="form-group">
+                <label>Choose Product Type:</label>
+                <select name="filters[]" multiple class="form-control select2">
+                    {% for product in filters.product_types %}
+                        <option value="{{ product }}">{{ product }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             
             <div class="form-group">
                 <label>Choose Host Region:</label>
-                <select name="filters[]" multiple class="form-control select2" required>
+                <select name="filters[]" multiple class="form-control select2">
                     {% for region in filters.host_regions %}
                         <option value="{{ region }}">{{ region }}</option>
                     {% endfor %}
@@ -38,7 +47,7 @@
 
             <div class="form-group">
                 <label>Choose Background:</label>
-                <select name="filters[]" multiple class="form-control select2" required>
+                <select name="filters[]" multiple class="form-control select2">
                     {% for background in filters.backgrounds %}
                         <option value="{{ background }}">{{ background }}</option>
                     {% endfor %}
@@ -47,18 +56,9 @@
 
             <div class="form-group">
                 <label>Choose Skills:</label>
-                <select name="filters[]" multiple class="form-control select2" required>
+                <select name="filters[]" multiple class="form-control select2">
                     {% for skill in filters.skills %}
                         <option value="{{ skill }}">{{ skill }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Choose Product Type:</label>
-                <select name="filters[]" multiple class="form-control select2" required>
-                    {% for product in filters.product_types %}
-                        <option value="{{ product }}">{{ product }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -103,7 +103,7 @@
 
                     if (response.opportunities && response.opportunities.length > 0) {
                         response.opportunities.forEach(function(opp) {
-                            let host = opp.host_lc ? opp.host_lc.name : "Unknown";
+                            let host = opp.home_mc ? opp.home_mc.parent.name : "Unknown";
                             let programme = opp.programme ? opp.programme.short_name : "Unknown";
                             let backgrounds = opp.backgrounds.map(bg => bg.constant_name).join(", ") || "None";
                             let skills = opp.skills.map(sk => sk.constant_name).join(", ") || "None";
